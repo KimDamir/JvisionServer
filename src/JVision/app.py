@@ -1,7 +1,7 @@
 import datetime
 import io
 from flask import Flask, request, jsonify
-from 
+from flask_jwt_extended import jwt_required, create_access_token, get_jwt_identity, JWTManager
 import PIL.Image as Image
 from dtrocr.model import DTrOCRLMHeadModel
 from dtrocr.processor import DTrOCRProcessor
@@ -14,10 +14,12 @@ from schema.models import Query, db, User
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'b4d0ada2eadcabc83ac56aae7fb58b87f0874b9112e76a36a5ca38ea9f487775'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite://app.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///Jvision.db'
 jwt = JWTManager(app)
 
 db.init_app(app)
+with app.app_context():
+    db.create_all()
 
 class DTrOCR:
     model: DTrOCRLMHeadModel
