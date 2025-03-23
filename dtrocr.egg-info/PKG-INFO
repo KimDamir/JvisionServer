@@ -1,0 +1,6 @@
+Metadata-Version: 2.2
+Name: dtrocr
+Version: 0.2.0
+Requires-Dist: torch
+Requires-Dist: torchvision
+Dynamic: requires-dist

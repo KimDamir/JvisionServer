@@ -1,0 +1,5 @@
+dtrocr.egg-info/PKG-INFO
+dtrocr.egg-info/SOURCES.txt
+dtrocr.egg-info/dependency_links.txt
+dtrocr.egg-info/requires.txt
+dtrocr.egg-info/top_level.txt

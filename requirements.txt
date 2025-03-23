@@ -1,0 +1,11 @@
+Pillow==10.4.0
+transformers==4.44.1
+sentencepiece
+ipykernel
+matplotlib
+scikit-learn
+protobuf
+cairosvg
+file:////home/kane/DTrOCR/dtrocr
+# pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+flama
