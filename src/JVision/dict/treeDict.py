@@ -54,7 +54,6 @@ class AhoTree: #Aho-Corasick tree implementation
         return string
         
     def get_words(self, query:str, max_outer_index=0):
-        print(query)
         searchRes = WordList([])
         currentNode = self.root
         index = 0

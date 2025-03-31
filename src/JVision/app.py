@@ -1,6 +1,7 @@
-import datetime
+from datetime import datetime, timezone, timedelta
 import io
 from flask import Flask, request, jsonify
+from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import jwt_required, create_access_token, get_jwt_identity, JWTManager
 import PIL.Image as Image
 from dtrocr.model import DTrOCRLMHeadModel
@@ -10,7 +11,7 @@ from api.load_processor import load_processor
 from api.create_dict import create_dict
 from dict.dictionary import Dictionary
 from schema.schema import WordSchema
-from schema.models import Query, db, User
+from schema.models import OcrQuery, db, User
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'b4d0ada2eadcabc83ac56aae7fb58b87f0874b9112e76a36a5ca38ea9f487775'
@@ -37,6 +38,7 @@ def startup():
     
 
 @app.route("/ocr", methods=['POST'])
+@jwt_required()
 def predict() -> str:
     body = request.data
     image = Image.open(io.BytesIO(body)).convert('RGB')
@@ -53,10 +55,18 @@ def predict() -> str:
     )
 
     predicted_text = DTrOCR.processor.tokeniser.decode(model_output[0], skip_special_tokens=True)
-    translations = DTrOCR.dictionary.search(predicted_text)
-    words_schema = WordSchema(many=True)
-    print(jsonify(words_schema.dump(translations)))
-    return jsonify(words_schema.dump(translations))
+    wordList = DTrOCR.dictionary.search(predicted_text)
+    if (len(wordList) >= 1):
+        word = wordList[0]
+        user_id = get_jwt_identity()
+        time = datetime.now(timezone.utc).astimezone().isoformat(sep='/', timespec='minutes')
+        query = OcrQuery(word.writings[0].writing, word.translations[0].translation, predicted_text, time, user_id)
+        db.session.add(query)
+        db.session.commit()
+        print("Commited query")
+    serializedWords = [translation.serialize() for translation in wordList]
+    print(serializedWords)
+    return jsonify(serializedWords)
 
 @app.route("/user", methods=['POST'])
 def create_user():
@@ -66,31 +76,44 @@ def create_user():
     password = data.get('password')
     user = User(username, email)
     user.set_password(password)
+    try:    
+        db.session.add(user)
+        db.session.commit()
+        response = jsonify({'message': 'Successfully registered!'})
+    except:
+        response = jsonify({'error': 'User already exists'})
     
-    db.session.add(user)
-    db.session.commit()
-    
-    return jsonify({'message': 'Successfully registered!'})
+    return response
 
-@app.route("/user", methods=['GET'])
-def login():
-    data = request.get_json()
-    user = User.objects.get(email=data.get('email'))
-    authorized = user.check_password(data.get('password'))
+@app.route("/user/<string:email>", methods=['GET'])
+def login(email):
+    password = request.headers.get('password')
+    user = User.query.filter_by(email=email).first()
+    authorized = user.check_password(password)
     if not authorized:
         return {'error': 'Email or password invalid'}, 401
     
-    expires = datetime.timedelta(days=7)
+    expires = timedelta(days=7)
     access_token = create_access_token(identity=str(user.id), expires_delta=expires)
     return {'token': access_token}, 200
 
 @app.route("/history", methods=['GET'])
-@jwt_required
+@jwt_required()
 def get_history():
-    user_id = get_jwt_identity
-    history = Query.query.filter_by(user_id = user_id).all()
-    return jsonify(history)
+    user_id = get_jwt_identity()
+    history = OcrQuery.query.filter_by(user_id = user_id).all()
+    result = json_list = [i.serialize for i in history]
+    print(result)
+    return jsonify(result)
 
+@app.route("/query/<string:query_text>", methods=['GET'])
+@jwt_required()
+def get_query(query_text):
+    wordList = DTrOCR.dictionary.search(query_text)
+    serializedWords = [translation.serialize() for translation in wordList]
+    print(serializedWords)
+    return jsonify(serializedWords)
+    
 
 if __name__ == '__main__':
     startup()

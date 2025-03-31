@@ -1,4 +1,7 @@
 
+import json
+
+
 class Reading:
     def __init__(self, reading:str=None, priority:str=None, nokanji: str = None, applies_to:str=None, notes:str=None):
         self.reading=reading
@@ -124,6 +127,13 @@ class Word:
     
     def __str__(self):
         return f'{self.writings}\n{self.readings}\n{self.translations}'
+    
+    def serialize(self):
+        return {
+            'writings': [str(writing) for writing in self.writings],
+            'readings': [str(reading) for reading in self.readings],
+            'translations': [str(translation) for translation in self.translations]
+        }
         
 class WordList(list):
     def __init__(self, words:list):

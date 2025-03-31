@@ -10,7 +10,7 @@ class Dictionary():
         self.tree = AhoTree(wordList)
         self.wordSet = self.tree.set
         
-    def search(self, query_word:str):
+    def search(self, query_word:str)-> WordList:
         query = query_word.strip()
         return self.tree.get_words(query)[0]
         
